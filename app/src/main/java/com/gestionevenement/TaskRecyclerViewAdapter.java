@@ -6,6 +6,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.DatePicker;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -33,12 +34,6 @@ public class TaskRecyclerViewAdapter extends
         ViewHolder viewHolder = new ViewHolder(view);
         return viewHolder;
     }
-
-    /*
-     * the recycler view will create a view for each task when we scroll through the list.
-     * once a task is out of the screen, the graphical elements will be destroyed.
-     * that is why we have to initialize every time the graphical elements with actual values.
-     */
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
         final TaskModel selectedTask = tasksList.get(position);
@@ -47,6 +42,7 @@ public class TaskRecyclerViewAdapter extends
         holder.taskName.setText(selectedTask.getName());
         holder.taskDescription.setText("" + selectedTask.getDescription());
         holder.taskCategory.setText("" + selectedTask.getCategory());
+        holder.taskDate.setText("" + selectedTask.getDeadline());
 
         //when item from the display has been touched, we update the information of the model.
         holder.taskState.setOnCheckedChangeListener(null); //reset the listener when the item is recreated when scrolling
@@ -65,7 +61,21 @@ public class TaskRecyclerViewAdapter extends
                     selectedTask.setDone(false);
                 }
             }
-        });
+        }
+        );
+
+        // to delete a task on checkbox click
+        holder.taskState.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                DatabaseHelper db = new DatabaseHelper(TaskRecyclerViewAdapter.this.context);
+                db.deleteTask(selectedTask.getId());
+                tasksList.remove(selectedTask);
+                notifyDataSetChanged();
+            }
+        }
+
+        );
     }
 
     @Override
@@ -79,6 +89,7 @@ public class TaskRecyclerViewAdapter extends
         public TextView taskDescription;
         public TextView taskCategory;
         public CheckBox taskState;
+        public TextView taskDate;
 
         public ViewHolder(View view) {
             super(view);
@@ -86,6 +97,7 @@ public class TaskRecyclerViewAdapter extends
             taskDescription = (TextView) view.findViewById(R.id.task_description);
             taskCategory = (TextView) view.findViewById(R.id.task_category);
             taskState = (CheckBox) view.findViewById(R.id.task_status);
+            taskDate = (TextView) view.findViewById(R.id.task_due_date);
 
             //item click event listener
             view.setOnClickListener(this);

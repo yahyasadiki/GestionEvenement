@@ -120,7 +120,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return tasks;
     }
 
-    // Update a task in the database
     public int updateTask(TaskModel task) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
