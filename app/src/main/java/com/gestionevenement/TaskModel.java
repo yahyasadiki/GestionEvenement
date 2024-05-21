@@ -3,7 +3,7 @@ package com.gestionevenement;
 import java.util.Date;
 
 public class TaskModel {
-
+    private static long id = 0;
     private String name;
     private String description;
     private Date deadline;
@@ -11,11 +11,20 @@ public class TaskModel {
     private boolean done;
 
     public TaskModel(String name, String description, Date deadline, String category) {
+        id++;
         this.name = name;
         this.description = description;
         this.deadline = deadline;
         this.done = false;
         this.category = category;
+    }
+
+    public static long getId() {
+        return id;
+    }
+
+    public static void setId(long id) {
+        TaskModel.id = id;
     }
 
     public String getName() {

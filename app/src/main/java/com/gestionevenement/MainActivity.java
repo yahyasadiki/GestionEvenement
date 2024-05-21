@@ -14,21 +14,17 @@ import android.widget.Button;
 import android.widget.PopupWindow;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 import androidx.appcompat.widget.Toolbar;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
 import androidx.core.view.GravityCompat;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
-
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationView;
@@ -38,75 +34,68 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener {
+public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     private RecyclerView tasksRecyclerView;
     private RecyclerView.Adapter mAdapter;
     private RecyclerView.LayoutManager mLayoutManager;
     private List<TaskModel> tasksList = new ArrayList<>();
-
     private TextView selectedCategoryText;
+    private DatabaseHelper dbHelper;
     final private CategoriesModel categoriesModel = new CategoriesModel();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Add new task", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+        dbHelper = new DatabaseHelper(this);
 
-                showTaskPopup();
-            }
+        FloatingActionButton fab = findViewById(R.id.fab);
+        fab.setOnClickListener(view -> {
+            Snackbar.make(view, "Add new task", Snackbar.LENGTH_LONG)
+                    .setAction("Action", null).show();
+            showTaskPopup();
         });
 
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        DrawerLayout drawer = findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        drawer.setDrawerListener(toggle);
+        drawer.addDrawerListener(toggle);
         toggle.syncState();
 
-        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+        NavigationView navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
-        selectedCategoryText = (TextView) findViewById(R.id.category_tasks);
+        selectedCategoryText = findViewById(R.id.category_tasks);
         selectedCategoryText.setText(CategoriesModel.CATEGORY_NONE);
 
-        //tasks recycler view
-        tasksRecyclerView = (RecyclerView) findViewById(R.id.tasks_recyclerview);
-
-        // use this setting to improve performance if you know that changes
-        // in content do not change the layout size of the RecyclerView
+        // RecyclerView setup
+        tasksRecyclerView = findViewById(R.id.tasks_recyclerview);
         tasksRecyclerView.setHasFixedSize(false);
-
-        // use a linear layout manager
         mLayoutManager = new LinearLayoutManager(this);
         tasksRecyclerView.setLayoutManager(mLayoutManager);
-
         DividerItemDecoration itemDecor = new DividerItemDecoration(tasksRecyclerView.getContext(), DividerItemDecoration.HORIZONTAL);
         tasksRecyclerView.addItemDecoration(itemDecor);
 
-        // specify an adapter
+        // Adapter setup
         mAdapter = new TaskRecyclerViewAdapter(getInitialTasks(), this);
         tasksRecyclerView.setAdapter(mAdapter);
     }
 
-    private List<TaskModel> getInitialTasks(){
-        List<TaskModel> sampleTasks = categoriesModel.getTasks();
+    private List<TaskModel> getInitialTasks() {
+        List<TaskModel> sampleTasks = dbHelper.getAllTasks();
         tasksList.addAll(sampleTasks);
         return tasksList;
     }
 
+
+
     @Override
     public void onBackPressed() {
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        DrawerLayout drawer = findViewById(R.id.drawer_layout);
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         } else {
@@ -116,130 +105,87 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.home, menu);
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
             return true;
         }
-
         return super.onOptionsItemSelected(item);
     }
 
-    @SuppressWarnings("StatementWithEmptyBody")
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {
-        // Handle navigation view item clicks here.
         int id = item.getItemId();
+        tasksList.clear();
+        List<TaskModel> filteredTasks = new ArrayList<>();
 
         if (id == R.id.nav_personal) {
-            // Handle the personal category
-            tasksList.clear();
-            List<TaskModel> filteredTasks = categoriesModel.getTasksForCategory(CategoriesModel.CATEGORY_PERSONAL);
-            tasksList.addAll(filteredTasks);
-            mAdapter.notifyDataSetChanged();
+            filteredTasks = dbHelper.getTasksForCategory(CategoriesModel.CATEGORY_PERSONAL);
             selectedCategoryText.setText(CategoriesModel.CATEGORY_PERSONAL);
-
         } else if (id == R.id.nav_school) {
-            tasksList.clear();
-            List<TaskModel> filteredTasks = categoriesModel.getTasksForCategory(CategoriesModel.CATEGORY_SCHOOL);
-            tasksList.addAll(filteredTasks);
-            mAdapter.notifyDataSetChanged();
+            filteredTasks = dbHelper.getTasksForCategory(CategoriesModel.CATEGORY_SCHOOL);
             selectedCategoryText.setText(CategoriesModel.CATEGORY_SCHOOL);
         } else if (id == R.id.nav_family) {
-            tasksList.clear();
-            List<TaskModel> filteredTasks = categoriesModel.getTasksForCategory(CategoriesModel.CATEGORY_FAMILY);
-            tasksList.addAll(filteredTasks);
-            mAdapter.notifyDataSetChanged();
+            filteredTasks = dbHelper.getTasksForCategory(CategoriesModel.CATEGORY_FAMILY);
             selectedCategoryText.setText(CategoriesModel.CATEGORY_FAMILY);
         } else if (id == R.id.nav_spiritual) {
-            tasksList.clear();
-            List<TaskModel> filteredTasks = categoriesModel.getTasksForCategory(CategoriesModel.CATEGORY_SPIRITUAL);
-            tasksList.addAll(filteredTasks);
-            mAdapter.notifyDataSetChanged();
+            filteredTasks = dbHelper.getTasksForCategory(CategoriesModel.CATEGORY_SPIRITUAL);
             selectedCategoryText.setText(CategoriesModel.CATEGORY_SPIRITUAL);
         } else if (id == R.id.nav_work) {
-            tasksList.clear();
-            List<TaskModel> filteredTasks = categoriesModel.getTasksForCategory(CategoriesModel.CATEGORY_WORK);
-            tasksList.addAll(filteredTasks);
-            mAdapter.notifyDataSetChanged();
+            filteredTasks = dbHelper.getTasksForCategory(CategoriesModel.CATEGORY_WORK);
             selectedCategoryText.setText(CategoriesModel.CATEGORY_WORK);
-        }else if (id == R.id.nav_all) {
-            tasksList.clear();
-            List<TaskModel> filteredTasks = categoriesModel.getTasks();
-            tasksList.addAll(filteredTasks);
-            mAdapter.notifyDataSetChanged();
+        } else if (id == R.id.nav_all) {
+            filteredTasks = dbHelper.getAllTasks();
             selectedCategoryText.setText(CategoriesModel.CATEGORY_NONE);
         }
 
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        tasksList.addAll(filteredTasks);
+        mAdapter.notifyDataSetChanged();
+
+        DrawerLayout drawer = findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
     }
 
+
     private void showTaskPopup() {
         try {
-            //We need to get the instance of the LayoutInflater, use the context of this activity
             LayoutInflater inflater = (LayoutInflater) MainActivity.this.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-            //Inflate the view from a predefined XML layout (no need for root id, using entire layout)
-            View layout = inflater.inflate(R.layout.task_popup,null);
+            View layout = inflater.inflate(R.layout.task_popup, null);
 
-            //Get the devices screen density to calculate correct pixel sizes
-            float density=MainActivity.this.getResources().getDisplayMetrics().density;
-            // create a focusable PopupWindow with the given layout and correct size
             final PopupWindow pw = new PopupWindow(layout, ViewPager.LayoutParams.WRAP_CONTENT, ViewPager.LayoutParams.WRAP_CONTENT, true);
             pw.setBackgroundDrawable(new ColorDrawable(Color.GRAY));
 
-            final Spinner staticSpinner = (Spinner) layout.findViewById(R.id.category_spinner);
-            ArrayAdapter aa = new ArrayAdapter(this,android.R.layout.simple_spinner_item, categoriesModel.getCategories());
-            // Specify the layout to use when the list of choices appears
+            final Spinner staticSpinner = layout.findViewById(R.id.category_spinner);
+            ArrayAdapter<String> aa = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, categoriesModel.getCategories());
             aa.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
             staticSpinner.setAdapter(aa);
 
-            final TextView taskTitle = (TextView) layout.findViewById(R.id.title_input);
-            final TextView taskDescription = (TextView) layout.findViewById(R.id.description_input);
+            final TextView taskTitle = layout.findViewById(R.id.title_input);
+            final TextView taskDescription = layout.findViewById(R.id.description_input);
 
-            //Button to close the pop-up
-            ((Button) layout.findViewById(R.id.task_add)).setOnClickListener(new View.OnClickListener() {
-                public void onClick(View v) {
-                    //extract the filled in information
-                    String name = taskTitle.getText().toString();
-                    String description = taskDescription.getText().toString();
-                    String category = staticSpinner.getSelectedItem().toString();
+            layout.findViewById(R.id.task_add).setOnClickListener(v -> {
+                String name = taskTitle.getText().toString();
+                String description = taskDescription.getText().toString();
+                String category = staticSpinner.getSelectedItem().toString();
 
-                    //create a new task
-                    TaskModel newTask = new TaskModel(name, description, new Date(), category);
-                    //add the task to our list
-                    categoriesModel.addTask(newTask);
+                TaskModel newTask = new TaskModel(name, description, new Date(), category);
+                long id = dbHelper.insertTask(newTask);
+                Toast.makeText(MainActivity.this, "Task inserted with ID: " + id, Toast.LENGTH_LONG).show();
 
-                    tasksList.clear();
-                    List<TaskModel> filteredTasks = categoriesModel.getTasks();
-                    tasksList.addAll(filteredTasks);
-
-                    Snackbar.make(v, "task added: " + newTask.toString(), Snackbar.LENGTH_LONG)
-                            .setAction("Action", null).show();
-
-                    //notify that the data has changed in the list
-                    mAdapter.notifyDataSetChanged();
-                    tasksRecyclerView.scrollToPosition(mAdapter.getItemCount() - 1);
-                    //close the window
-                    pw.dismiss();
-
-                }
+                tasksList.clear();
+                tasksList.addAll(dbHelper.getAllTasks());
+                mAdapter.notifyDataSetChanged();
+                tasksRecyclerView.scrollToPosition(mAdapter.getItemCount() - 1);
+                pw.dismiss();
             });
 
             pw.showAtLocation(layout, Gravity.CENTER, 0, 0);
-
         } catch (Exception e) {
             e.printStackTrace();
         }
