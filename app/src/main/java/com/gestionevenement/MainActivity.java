@@ -198,22 +198,18 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 public void shareTask(View view) {
     Button shareButton = findViewById(R.id.share_task);
     shareButton.setOnClickListener(v -> {
-        // Assuming you have a TaskModel object for the task you want to share
         TaskModel taskToShare =  tasksList.get(0);
 
-        // Prepare the task details
 String taskDetails = "The task titled '" + taskToShare.getName() +
                      "' has the following details: Description - " + taskToShare.getDescription() +
                      ". The due date for this task is " + new SimpleDateFormat("dd/MM/yyyy").format(taskToShare.getDeadline()) +
                      ". This task belongs to the '" + taskToShare.getCategory() + "' category.";
 
-        // Create an intent with ACTION_SEND action
         Intent sendIntent = new Intent();
         sendIntent.setAction(Intent.ACTION_SEND);
         sendIntent.putExtra(Intent.EXTRA_TEXT, taskDetails);
         sendIntent.setType("text/plain");
 
-        // Start the intent
         if (sendIntent.resolveActivity(getPackageManager()) != null) {
             startActivity(sendIntent);
         }
